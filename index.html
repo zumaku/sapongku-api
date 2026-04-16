@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <title>Sapongku Smart Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        :root {
+            --bg-main: #0f172a; --bg-card: #1e293b; --bg-input: #334155;
+            --text-main: #f8fafc; --text-muted: #94a3b8;
+            --accent-on: #10b981; --accent-on-hover: #059669;
+            --accent-off: #ef4444; --accent-off-hover: #dc2626;
+            --accent-blue: #3b82f6; --accent-blue-hover: #2563eb;
+            --border-color: #334155;
+        }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; text-align: center; padding: 20px 15px; background: var(--bg-main); color: var(--text-main); margin: 0; }
+        .header-title { margin-bottom: 35px; font-weight: 700; letter-spacing: 0.5px; font-size: 26px; }
+        .header-subtitle { color: var(--text-muted); font-size: 14px; }
+        
+        .grid-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; max-width: 800px; margin: 0 auto 30px auto; }
+        
+        .card { background: var(--bg-card); padding: 20px; width: 100%; max-width: 260px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid var(--border-color); }
+        .card h3 { margin-top: 0; font-size: 15px; color: var(--text-main); margin-bottom: 18px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        
+        .btn-group { display: flex; gap: 10px; }
+        button { flex: 1; padding: 12px; border: none; cursor: pointer; color: white; font-size: 14px; font-weight: 600; border-radius: 10px; transition: 0.2s; }
+        .btn-on { background: var(--accent-on); } .btn-on:active { background: var(--accent-on-hover); }
+        .btn-off { background: var(--accent-off); } .btn-off:active { background: var(--accent-off-hover); }
+        .btn-blue { background: var(--accent-blue); width: 100%; margin-top: 15px; } .btn-blue:active { background: var(--accent-blue-hover); }
+        
+        /* Form Penjadwalan */
+        .schedule-panel { background: var(--bg-card); padding: 20px; max-width: 500px; margin: 0 auto; border-radius: 16px; border: 1px solid var(--border-color); text-align: left; }
+        .schedule-panel h3 { margin-top: 0; text-align: center; color: var(--text-main); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 5px; }
+        select, input[type="time"] { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: white; font-size: 14px; outline: none; box-sizing: border-box;}
+        
+        .jadwal-list { margin-top: 20px; font-size: 13px; }
+        .jadwal-item { background: var(--bg-input); padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
+        .jadwal-badge { background: #475569; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;}
+        .badge-on { color: var(--accent-on); } .badge-off { color: var(--accent-off); }
+
+        #log-container { margin-top: 30px; padding: 16px; background: #020617; border-radius: 12px; font-size: 13px; border: 1px solid var(--border-color); max-width: 500px; margin-left: auto; margin-right: auto; text-align: left; position: relative; font-family: monospace;}
+        #log { color: #38bdf8; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <h1 class="header-title">⚡ Sapongku Control Panel <span class="header-subtitle">v2.1</span></h1>
+
+    <div class="grid-container">
+        <div class="card">
+            <h3>🛋️ Ruang Tamu</h3>
+            <div class="btn-group">
+                <button class="btn-on" onclick="kirim('ruang_tamu', 'saklar1', 'on')">ON</button>
+                <button class="btn-off" onclick="kirim('ruang_tamu', 'saklar1', 'off')">OFF</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3>🪑 Teras</h3>
+            <div class="btn-group">
+                <button class="btn-on" onclick="kirim('ruang_tamu', 'saklar2', 'on')">ON</button>
+                <button class="btn-off" onclick="kirim('ruang_tamu', 'saklar2', 'off')">OFF</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3>🛏️ Kamar</h3>
+            <div class="btn-group">
+                <button class="btn-on" onclick="kirim('ruang_tamu', 'saklar3', 'on')">ON</button>
+                <button class="btn-off" onclick="kirim('ruang_tamu', 'saklar3', 'off')">OFF</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3>🍱 Dapur</h3>
+            <div class="btn-group">
+                <button class="btn-on" onclick="kirim('dapur', 'saklar1', 'on')">ON</button>
+                <button class="btn-off" onclick="kirim('dapur', 'saklar1', 'off')">OFF</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="schedule-panel">
+        <h3>⏰ Jadwal Otomatis</h3>
+        <div class="form-group">
+            <label>Pilih Perangkat</label>
+            <select id="input-target">
+                <option value="ruang_tamu|saklar1">🛋️ Ruang Tamu</option>
+                <option value="ruang_tamu|saklar2">🪑 Teras</option>
+                <option value="ruang_tamu|saklar3">🛏️ Kamar</option>
+                <option value="dapur|saklar1">🍱 Dapur</option>
+            </select>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex: 1;">
+                <label>Aksi</label>
+                <select id="input-status">
+                    <option value="on">NYALAKAN (ON)</option>
+                    <option value="off">MATIKAN (OFF)</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>Jam (Setiap Hari)</label>
+                <input type="time" id="input-waktu" required>
+            </div>
+        </div>
+        <button class="btn-blue" onclick="buatJadwal()">+ Tambah Jadwal</button>
+
+        <div class="jadwal-list" id="list-jadwal">
+            <div style="text-align: center; color: #64748b; margin-top: 15px;">Belum ada jadwal aktif.</div>
+        </div>
+    </div>
+
+    <div id="log-container">
+        <div style="color: #64748b; margin-bottom: 5px; font-size: 11px;">Terminal Status</div>
+        <div id="log">Menunggu perintah...</div>
+    </div>
+
+    <script>
+        // Fungsi Manual Kontrol
+        function kirim(ruangan, saklar, status) {
+            tulisLog("Mengirim " + status.toUpperCase() + " ke " + saklar + "...", "#fbbf24");
+            fetch('/api/' + ruangan + '/' + saklar, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: status })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) tulisLog("Error: " + data.error, "#f87171");
+                else tulisLog("Sukses terhubung: " + data.target, "#34d399");
+            })
+            .catch(err => tulisLog("Gagal koneksi ke server", "#f87171"));
+        }
+
+        // Fungsi Tambah Jadwal
+        function buatJadwal() {
+            const target = document.getElementById('input-target').value;
+            const status = document.getElementById('input-status').value;
+            const waktu = document.getElementById('input-waktu').value;
+
+            if(!waktu) return alert("Pilih jam terlebih dahulu!");
+
+            const [ruangan, saklar] = target.split('|');
+
+            tulisLog("Menyimpan jadwal baru...", "#fbbf24");
+
+            fetch('/api/jadwal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ruangan, saklar, status, waktu })
+            })
+            .then(res => res.json())
+            .then(data => {
+                tulisLog(data.message, "#34d399");
+                loadJadwal(); // Refresh daftar jadwal
+            });
+        }
+
+        // Fungsi Load Daftar Jadwal
+        function loadJadwal() {
+            fetch('/api/jadwal')
+            .then(res => res.json())
+            .then(data => {
+                const listEl = document.getElementById('list-jadwal');
+                if(data.length === 0) {
+                    listEl.innerHTML = '<div style="text-align: center; color: #64748b; margin-top: 15px;">Belum ada jadwal aktif.</div>';
+                    return;
+                }
+                
+                let html = '<div style="margin-top: 15px; margin-bottom: 5px; font-weight: bold;">Jadwal Aktif:</div>';
+                data.forEach(j => {
+                    const styleClass = j.status === 'on' ? 'badge-on' : 'badge-off';
+                    html += `
+                    <div class="jadwal-item">
+                        <div>
+                            <span>${j.ruangan} (${j.saklar})</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <span class="jadwal-badge ${styleClass}">${j.status.toUpperCase()}</span>
+                            <span style="font-weight: bold; color: white;">${j.waktu}</span>
+                        </div>
+                    </div>
+                    `;
+                });
+                listEl.innerHTML = html;
+            });
+        }
+
+        // Helper Log
+        function tulisLog(pesan, warna) {
+            const logEl = document.getElementById('log');
+            logEl.innerText = "> " + pesan;
+            logEl.style.color = warna;
+        }
+
+        // Load jadwal saat web pertama dibuka
+        loadJadwal();
+    </script>
+</body>
+</html>
