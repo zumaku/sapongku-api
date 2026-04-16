@@ -10,6 +10,7 @@
             --accent-on: #10b981; --accent-on-hover: #059669;
             --accent-off: #ef4444; --accent-off-hover: #dc2626;
             --accent-blue: #3b82f6; --accent-blue-hover: #2563eb;
+            --accent-warn: #f59e0b; --accent-warn-hover: #d97706;
             --border-color: #334155;
         }
         body { font-family: 'Segoe UI', system-ui, sans-serif; text-align: center; padding: 20px 15px; background: var(--bg-main); color: var(--text-main); margin: 0; }
@@ -17,7 +18,6 @@
         .header-subtitle { color: var(--text-muted); font-size: 14px; }
         
         .grid-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; max-width: 800px; margin: 0 auto 30px auto; }
-        
         .card { background: var(--bg-card); padding: 20px; width: 100%; max-width: 260px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid var(--border-color); }
         .card h3 { margin-top: 0; font-size: 15px; color: var(--text-main); margin-bottom: 18px; display: flex; justify-content: center; align-items: center; gap: 8px; }
         
@@ -27,7 +27,6 @@
         .btn-off { background: var(--accent-off); } .btn-off:active { background: var(--accent-off-hover); }
         .btn-blue { background: var(--accent-blue); width: 100%; margin-top: 15px; } .btn-blue:active { background: var(--accent-blue-hover); }
         
-        /* Form Penjadwalan */
         .schedule-panel { background: var(--bg-card); padding: 20px; max-width: 500px; margin: 0 auto; border-radius: 16px; border: 1px solid var(--border-color); text-align: left; }
         .schedule-panel h3 { margin-top: 0; text-align: center; color: var(--text-main); }
         .form-group { margin-bottom: 15px; }
@@ -35,16 +34,22 @@
         select, input[type="time"] { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: white; font-size: 14px; outline: none; box-sizing: border-box;}
         
         .jadwal-list { margin-top: 20px; font-size: 13px; }
-        .jadwal-item { background: var(--bg-input); padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
+        .jadwal-item { background: var(--bg-input); padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 10px; border-left: 4px solid var(--accent-blue);}
+        .jadwal-info { display: flex; justify-content: space-between; align-items: center; }
+        .jadwal-actions { display: flex; gap: 5px; justify-content: flex-end; }
+        .btn-small { padding: 6px 12px; font-size: 12px; flex: 0; border-radius: 6px; }
+        .btn-edit { background: var(--accent-warn); } .btn-edit:active { background: var(--accent-warn-hover); }
+        .btn-del { background: var(--accent-off); } .btn-del:active { background: var(--accent-off-hover); }
+        
         .jadwal-badge { background: #475569; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;}
         .badge-on { color: var(--accent-on); } .badge-off { color: var(--accent-off); }
 
-        #log-container { margin-top: 30px; padding: 16px; background: #020617; border-radius: 12px; font-size: 13px; border: 1px solid var(--border-color); max-width: 500px; margin-left: auto; margin-right: auto; text-align: left; position: relative; font-family: monospace;}
+        #log-container { margin-top: 30px; padding: 16px; background: #020617; border-radius: 12px; font-size: 13px; border: 1px solid var(--border-color); max-width: 500px; margin-left: auto; margin-right: auto; text-align: left; font-family: monospace;}
         #log { color: #38bdf8; word-break: break-all; }
     </style>
 </head>
 <body>
-    <h1 class="header-title">⚡ Sapongku Control Panel <span class="header-subtitle">v2.1</span></h1>
+    <h1 class="header-title">⚡ Sapongku Control Panel <span class="header-subtitle">v1.1.2 (CRUD)</span></h1>
 
     <div class="grid-container">
         <div class="card">
@@ -78,7 +83,7 @@
     </div>
 
     <div class="schedule-panel">
-        <h3>⏰ Jadwal Otomatis</h3>
+        <h3 id="form-title">⏰ Tambah Jadwal Baru</h3>
         <div class="form-group">
             <label>Pilih Perangkat</label>
             <select id="input-target">
@@ -101,10 +106,13 @@
                 <input type="time" id="input-waktu" required>
             </div>
         </div>
-        <button class="btn-blue" onclick="buatJadwal()">+ Tambah Jadwal</button>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn-blue" id="btn-submit" onclick="submitJadwal()">+ Tambah Jadwal</button>
+            <button class="btn-del" id="btn-cancel" onclick="batalEdit()" style="display: none; margin-top: 15px;">Batal</button>
+        </div>
 
         <div class="jadwal-list" id="list-jadwal">
-            <div style="text-align: center; color: #64748b; margin-top: 15px;">Belum ada jadwal aktif.</div>
+            <div style="text-align: center; color: #64748b; margin-top: 15px;">Memuat jadwal...</div>
         </div>
     </div>
 
@@ -114,68 +122,123 @@
     </div>
 
     <script>
-        // Fungsi Manual Kontrol
+        let editModeId = null; // Menyimpan ID saat dalam mode edit
+        let globalJadwalData = []; // Menyimpan salinan data jadwal
+
         function kirim(ruangan, saklar, status) {
             tulisLog("Mengirim " + status.toUpperCase() + " ke " + saklar + "...", "#fbbf24");
             fetch('/api/' + ruangan + '/' + saklar, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: status })
-            })
-            .then(res => res.json())
-            .then(data => {
+                body: JSON.stringify({ status: status })
+            }).then(res => res.json()).then(data => {
                 if(data.error) tulisLog("Error: " + data.error, "#f87171");
-                else tulisLog("Sukses terhubung: " + data.target, "#34d399");
-            })
-            .catch(err => tulisLog("Gagal koneksi ke server", "#f87171"));
+                else tulisLog("Sukses: " + data.target, "#34d399");
+            }).catch(err => tulisLog("Gagal koneksi server", "#f87171"));
         }
 
-        // Fungsi Tambah Jadwal
-        function buatJadwal() {
+        // CREATE & UPDATE
+        function submitJadwal() {
             const target = document.getElementById('input-target').value;
             const status = document.getElementById('input-status').value;
             const waktu = document.getElementById('input-waktu').value;
 
             if(!waktu) return alert("Pilih jam terlebih dahulu!");
-
             const [ruangan, saklar] = target.split('|');
 
-            tulisLog("Menyimpan jadwal baru...", "#fbbf24");
+            const payload = { ruangan, saklar, status, waktu };
+            const isEdit = editModeId !== null;
+            const url = isEdit ? '/api/jadwal/' + editModeId : '/api/jadwal';
+            const method = isEdit ? 'PUT' : 'POST';
 
-            fetch('/api/jadwal', {
-                method: 'POST',
+            tulisLog(isEdit ? "Menyimpan perubahan..." : "Menambahkan jadwal...", "#fbbf24");
+
+            fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ruangan, saklar, status, waktu })
-            })
-            .then(res => res.json())
-            .then(data => {
+                body: JSON.stringify(payload)
+            }).then(res => res.json()).then(data => {
                 tulisLog(data.message, "#34d399");
-                loadJadwal(); // Refresh daftar jadwal
+                batalEdit(); // Reset form
+                loadJadwal();
             });
         }
 
-        // Fungsi Load Daftar Jadwal
+        // DELETE
+        function hapusJadwal(id) {
+            if(!confirm("Yakin ingin menghapus jadwal ini?")) return;
+            
+            tulisLog("Menghapus jadwal...", "#fbbf24");
+            fetch('/api/jadwal/' + id, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(data => {
+                tulisLog(data.message, "#f87171");
+                if (editModeId === id) batalEdit();
+                loadJadwal();
+            });
+        }
+
+        // EDIT MODE SETUP
+        function editJadwal(id) {
+            const jadwal = globalJadwalData.find(j => j.id === id);
+            if(!jadwal) return;
+
+            // Isi nilai ke form
+            document.getElementById('input-target').value = jadwal.ruangan + '|' + jadwal.saklar;
+            document.getElementById('input-status').value = jadwal.status;
+            document.getElementById('input-waktu').value = jadwal.waktu;
+
+            // Ubah UI Form
+            editModeId = id;
+            document.getElementById('form-title').innerText = "✏️ Edit Jadwal";
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.innerText = "Simpan Perubahan";
+            btnSubmit.style.background = "var(--accent-warn)";
+            document.getElementById('btn-cancel').style.display = "block";
+            
+            window.scrollTo({ top: document.querySelector('.schedule-panel').offsetTop - 20, behavior: 'smooth' });
+        }
+
+        // RESET FORM
+        function batalEdit() {
+            editModeId = null;
+            document.getElementById('form-title').innerText = "⏰ Tambah Jadwal Baru";
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.innerText = "+ Tambah Jadwal";
+            btnSubmit.style.background = "var(--accent-blue)";
+            document.getElementById('btn-cancel').style.display = "none";
+            
+            // Reset input waktu
+            document.getElementById('input-waktu').value = "";
+        }
+
+        // READ
         function loadJadwal() {
             fetch('/api/jadwal')
             .then(res => res.json())
             .then(data => {
+                globalJadwalData = data; // Simpan ke global variable
                 const listEl = document.getElementById('list-jadwal');
                 if(data.length === 0) {
                     listEl.innerHTML = '<div style="text-align: center; color: #64748b; margin-top: 15px;">Belum ada jadwal aktif.</div>';
                     return;
                 }
                 
-                let html = '<div style="margin-top: 15px; margin-bottom: 5px; font-weight: bold;">Jadwal Aktif:</div>';
+                let html = '<div style="margin-top: 15px; margin-bottom: 10px; font-weight: bold;">Jadwal Aktif:</div>';
                 data.forEach(j => {
                     const styleClass = j.status === 'on' ? 'badge-on' : 'badge-off';
                     html += `
                     <div class="jadwal-item">
-                        <div>
-                            <span>${j.ruangan} (${j.saklar})</span>
+                        <div class="jadwal-info">
+                            <span>${j.ruangan.replace('_', ' ').toUpperCase()} (${j.saklar})</span>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <span class="jadwal-badge ${styleClass}">${j.status.toUpperCase()}</span>
+                                <span style="font-weight: bold; color: white;">${j.waktu}</span>
+                            </div>
                         </div>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <span class="jadwal-badge ${styleClass}">${j.status.toUpperCase()}</span>
-                            <span style="font-weight: bold; color: white;">${j.waktu}</span>
+                        <div class="jadwal-actions">
+                            <button class="btn-small btn-edit" onclick="editJadwal(${j.id})">Edit</button>
+                            <button class="btn-small btn-del" onclick="hapusJadwal(${j.id})">Hapus</button>
                         </div>
                     </div>
                     `;
@@ -184,14 +247,12 @@
             });
         }
 
-        // Helper Log
         function tulisLog(pesan, warna) {
             const logEl = document.getElementById('log');
             logEl.innerText = "> " + pesan;
             logEl.style.color = warna;
         }
 
-        // Load jadwal saat web pertama dibuka
         loadJadwal();
     </script>
 </body>
