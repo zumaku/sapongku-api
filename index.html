@@ -19,8 +19,13 @@
         
         .grid-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; max-width: 800px; margin: 0 auto 30px auto; }
         .card { background: var(--bg-card); padding: 20px; width: 100%; max-width: 260px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid var(--border-color); }
-        .card h3 { margin-top: 0; font-size: 15px; color: var(--text-main); margin-bottom: 18px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .card h3 { margin-top: 0; font-size: 15px; color: var(--text-main); margin-bottom: 12px; display: flex; justify-content: center; align-items: center; gap: 8px; }
         
+        /* CSS Baru untuk Sensor */
+        .sensor-panel { background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; font-size: 12px; color: var(--accent-on); margin-bottom: 15px; text-align: left; display: flex; flex-direction: column; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .sensor-row { display: flex; justify-content: space-between; }
+        .sensor-offline { color: var(--accent-warn); font-style: italic; text-align: center; }
+
         .btn-group { display: flex; gap: 10px; }
         button { flex: 1; padding: 12px; border: none; cursor: pointer; color: white; font-size: 14px; font-weight: 600; border-radius: 10px; transition: 0.2s; }
         .btn-on { background: var(--accent-on); } .btn-on:active { background: var(--accent-on-hover); }
@@ -49,16 +54,22 @@
     </style>
 </head>
 <body>
-    <h1 class="header-title">⚡ Sapongku Control Panel <span class="header-subtitle">v1.1.3</span></h1>
+    <h1 class="header-title">⚡ Sapongku Control Panel <span class="header-subtitle">v1.1.4</span></h1>
 
     <div class="grid-container">
+        <!-- RUANG TAMU -->
         <div class="card">
             <h3>🛋️ Ruang Tamu</h3>
+            <div id="sensor-ruang_tamu" class="sensor-panel">
+                <div class="sensor-offline">Mencari sinyal sensor...</div>
+            </div>
             <div class="btn-group">
                 <button class="btn-on" onclick="kirim('ruang_tamu', 'saklar1', 'on')">ON</button>
                 <button class="btn-off" onclick="kirim('ruang_tamu', 'saklar1', 'off')">OFF</button>
             </div>
         </div>
+        
+        <!-- TERAS -->
         <div class="card">
             <h3>🪑 Teras</h3>
             <div class="btn-group">
@@ -66,6 +77,8 @@
                 <button class="btn-off" onclick="kirim('ruang_tamu', 'saklar2', 'off')">OFF</button>
             </div>
         </div>
+
+        <!-- KAMAR -->
         <div class="card">
             <h3>🛏️ Kamar</h3>
             <div class="btn-group">
@@ -73,8 +86,13 @@
                 <button class="btn-off" onclick="kirim('ruang_tamu', 'saklar3', 'off')">OFF</button>
             </div>
         </div>
+
+        <!-- DAPUR -->
         <div class="card">
             <h3>🍱 Dapur</h3>
+            <div id="sensor-dapur" class="sensor-panel">
+                <div class="sensor-offline">Mencari sinyal sensor...</div>
+            </div>
             <div class="btn-group">
                 <button class="btn-on" onclick="kirim('dapur', 'saklar1', 'on')">ON</button>
                 <button class="btn-off" onclick="kirim('dapur', 'saklar1', 'off')">OFF</button>
@@ -82,6 +100,7 @@
         </div>
     </div>
 
+    <!-- PANEL JADWAL (TETAP SAMA SEPERTI KODE ASLI) -->
     <div class="schedule-panel">
         <h3 id="form-title">⏰ Tambah Jadwal Baru</h3>
         <div class="form-group">
@@ -110,7 +129,6 @@
             <button class="btn-blue" id="btn-submit" onclick="submitJadwal()">+ Tambah Jadwal</button>
             <button class="btn-del" id="btn-cancel" onclick="batalEdit()" style="display: none; margin-top: 15px;">Batal</button>
         </div>
-
         <div class="jadwal-list" id="list-jadwal">
             <div style="text-align: center; color: #64748b; margin-top: 15px;">Memuat jadwal...</div>
         </div>
@@ -122,8 +140,44 @@
     </div>
 
     <script>
-        let editModeId = null; // Menyimpan ID saat dalam mode edit
-        let globalJadwalData = []; // Menyimpan salinan data jadwal
+        // ----------------------------------------------------
+        // LOGIKA WEBSOCKET FRONTEND (BARU)
+        // ----------------------------------------------------
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = protocol + '//' + window.location.host;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => tulisLog("Terhubung ke Kordinasi Pusat", "#34d399");
+        ws.onclose = () => tulisLog("Koneksi ke Pusat Terputus!", "#f87171");
+
+        ws.onmessage = (event) => {
+            const pesan = JSON.parse(event.data);
+            
+            // Perbarui UI Sensor berdasarkan sumber data ('ruang_tamu' atau 'dapur')
+            if (pesan.source && pesan.data && pesan.data.type === 'sensor') {
+                const elemenSensor = document.getElementById('sensor-' + pesan.source);
+                if (elemenSensor) {
+                    let html = '';
+                    
+                    // Render DHT22 Sensor 1
+                    if (pesan.data.dht22_1) {
+                        html += `<div class="sensor-row"><span>Sensor 1:</span> <span>🌡️ ${pesan.data.dht22_1.temperature}°C &nbsp; 💧 ${pesan.data.dht22_1.humidity}%</span></div>`;
+                    }
+                    // Render DHT22 Sensor 2 (Jika ada)
+                    if (pesan.data.dht22_2) {
+                        html += `<div class="sensor-row"><span>Sensor 2:</span> <span>🌡️ ${pesan.data.dht22_2.temperature}°C &nbsp; 💧 ${pesan.data.dht22_2.humidity}%</span></div>`;
+                    }
+                    
+                    elemenSensor.innerHTML = html;
+                }
+            }
+        };
+
+        // ----------------------------------------------------
+        // SCRIPT CRUD JADWAL & KONTROL (SAMA SEPERTI SEBELUMNYA)
+        // ----------------------------------------------------
+        let editModeId = null; 
+        let globalJadwalData = []; 
 
         function kirim(ruangan, saklar, status) {
             tulisLog("Mengirim " + status.toUpperCase() + " ke " + saklar + "...", "#fbbf24");
@@ -137,111 +191,67 @@
             }).catch(err => tulisLog("Gagal koneksi server", "#f87171"));
         }
 
-        // CREATE & UPDATE
         function submitJadwal() {
             const target = document.getElementById('input-target').value;
             const status = document.getElementById('input-status').value;
             const waktu = document.getElementById('input-waktu').value;
-
             if(!waktu) return alert("Pilih jam terlebih dahulu!");
+            
             const [ruangan, saklar] = target.split('|');
-
             const payload = { ruangan, saklar, status, waktu };
             const isEdit = editModeId !== null;
             const url = isEdit ? '/api/jadwal/' + editModeId : '/api/jadwal';
             const method = isEdit ? 'PUT' : 'POST';
 
             tulisLog(isEdit ? "Menyimpan perubahan..." : "Menambahkan jadwal...", "#fbbf24");
-
             fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             }).then(res => res.json()).then(data => {
-                tulisLog(data.message, "#34d399");
-                batalEdit(); // Reset form
-                loadJadwal();
+                tulisLog(data.message, "#34d399"); batalEdit(); loadJadwal();
             });
         }
 
-        // DELETE
         function hapusJadwal(id) {
             if(!confirm("Yakin ingin menghapus jadwal ini?")) return;
-            
             tulisLog("Menghapus jadwal...", "#fbbf24");
-            fetch('/api/jadwal/' + id, { method: 'DELETE' })
-            .then(res => res.json())
-            .then(data => {
-                tulisLog(data.message, "#f87171");
-                if (editModeId === id) batalEdit();
-                loadJadwal();
+            fetch('/api/jadwal/' + id, { method: 'DELETE' }).then(res => res.json()).then(data => {
+                tulisLog(data.message, "#f87171"); if (editModeId === id) batalEdit(); loadJadwal();
             });
         }
 
-        // EDIT MODE SETUP
         function editJadwal(id) {
             const jadwal = globalJadwalData.find(j => j.id === id);
             if(!jadwal) return;
-
-            // Isi nilai ke form
             document.getElementById('input-target').value = jadwal.ruangan + '|' + jadwal.saklar;
             document.getElementById('input-status').value = jadwal.status;
             document.getElementById('input-waktu').value = jadwal.waktu;
-
-            // Ubah UI Form
             editModeId = id;
             document.getElementById('form-title').innerText = "✏️ Edit Jadwal";
             const btnSubmit = document.getElementById('btn-submit');
-            btnSubmit.innerText = "Simpan Perubahan";
-            btnSubmit.style.background = "var(--accent-warn)";
+            btnSubmit.innerText = "Simpan Perubahan"; btnSubmit.style.background = "var(--accent-warn)";
             document.getElementById('btn-cancel').style.display = "block";
-            
             window.scrollTo({ top: document.querySelector('.schedule-panel').offsetTop - 20, behavior: 'smooth' });
         }
 
-        // RESET FORM
         function batalEdit() {
             editModeId = null;
             document.getElementById('form-title').innerText = "⏰ Tambah Jadwal Baru";
             const btnSubmit = document.getElementById('btn-submit');
-            btnSubmit.innerText = "+ Tambah Jadwal";
-            btnSubmit.style.background = "var(--accent-blue)";
+            btnSubmit.innerText = "+ Tambah Jadwal"; btnSubmit.style.background = "var(--accent-blue)";
             document.getElementById('btn-cancel').style.display = "none";
-            
-            // Reset input waktu
             document.getElementById('input-waktu').value = "";
         }
 
-        // READ
         function loadJadwal() {
-            fetch('/api/jadwal')
-            .then(res => res.json())
-            .then(data => {
-                globalJadwalData = data; // Simpan ke global variable
+            fetch('/api/jadwal').then(res => res.json()).then(data => {
+                globalJadwalData = data; 
                 const listEl = document.getElementById('list-jadwal');
-                if(data.length === 0) {
-                    listEl.innerHTML = '<div style="text-align: center; color: #64748b; margin-top: 15px;">Belum ada jadwal aktif.</div>';
-                    return;
-                }
+                if(data.length === 0) { listEl.innerHTML = '<div style="text-align: center; color: #64748b; margin-top: 15px;">Belum ada jadwal aktif.</div>'; return; }
                 
                 let html = '<div style="margin-top: 15px; margin-bottom: 10px; font-weight: bold;">Jadwal Aktif:</div>';
                 data.forEach(j => {
                     const styleClass = j.status === 'on' ? 'badge-on' : 'badge-off';
-                    html += `
-                    <div class="jadwal-item">
-                        <div class="jadwal-info">
-                            <span>${j.ruangan.replace('_', ' ').toUpperCase()} (${j.saklar})</span>
-                            <div style="display: flex; gap: 8px; align-items: center;">
-                                <span class="jadwal-badge ${styleClass}">${j.status.toUpperCase()}</span>
-                                <span style="font-weight: bold; color: white;">${j.waktu}</span>
-                            </div>
-                        </div>
-                        <div class="jadwal-actions">
-                            <button class="btn-small btn-edit" onclick="editJadwal(${j.id})">Edit</button>
-                            <button class="btn-small btn-del" onclick="hapusJadwal(${j.id})">Hapus</button>
-                        </div>
-                    </div>
-                    `;
+                    html += `<div class="jadwal-item"><div class="jadwal-info"><span>${j.ruangan.replace('_', ' ').toUpperCase()} (${j.saklar})</span><div style="display: flex; gap: 8px; align-items: center;"><span class="jadwal-badge ${styleClass}">${j.status.toUpperCase()}</span><span style="font-weight: bold; color: white;">${j.waktu}</span></div></div><div class="jadwal-actions"><button class="btn-small btn-edit" onclick="editJadwal(${j.id})">Edit</button><button class="btn-small btn-del" onclick="hapusJadwal(${j.id})">Hapus</button></div></div>`;
                 });
                 listEl.innerHTML = html;
             });
