@@ -1,266 +1,522 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <title>Sapongku Smart Control</title>
+    <meta charset="UTF-8">
+    <title>Sapongku · Panel Kendali</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-main: #0f172a; --bg-card: #1e293b; --bg-input: #334155;
-            --text-main: #f8fafc; --text-muted: #94a3b8;
-            --accent-on: #10b981; --accent-on-hover: #059669;
-            --accent-off: #ef4444; --accent-off-hover: #dc2626;
-            --accent-blue: #3b82f6; --accent-blue-hover: #2563eb;
-            --accent-warn: #f59e0b; --accent-warn-hover: #d97706;
-            --border-color: #334155;
+            --bg: #121214;
+            --surface: #1B1B1E;
+            --text: #F3F2ED;
+            --text-muted: #8C8C92;
+            --border: #2C2C30;
+            --accent: #6FBE8C;       /* sage green — ON / active */
+            --accent-soft: #1E2E23;
+            --danger: #E07A6C;       /* muted clay — OFF / hapus */
+            --danger-soft: #332020;
+            --warn: #D9AC5C;         /* muted amber — edit */
+            --warn-soft: #332A18;
         }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; text-align: center; padding: 20px 15px; background: var(--bg-main); color: var(--text-main); margin: 0; }
-        .header-title { margin-bottom: 35px; font-weight: 700; letter-spacing: 0.5px; font-size: 26px; }
-        .header-subtitle { color: var(--text-muted); font-size: 14px; }
-        
-        .grid-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; max-width: 800px; margin: 0 auto 30px auto; }
-        .card { background: var(--bg-card); padding: 20px; width: 100%; max-width: 260px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid var(--border-color); }
-        .card h3 { margin-top: 0; font-size: 15px; color: var(--text-main); margin-bottom: 12px; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        
-        /* CSS Baru untuk Sensor */
-        .sensor-panel { background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; font-size: 12px; color: var(--accent-on); margin-bottom: 15px; text-align: left; display: flex; flex-direction: column; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.2); }
-        .sensor-row { display: flex; justify-content: space-between; }
-        .sensor-offline { color: var(--accent-warn); font-style: italic; text-align: center; }
 
-        .btn-group { display: flex; gap: 10px; }
-        button { flex: 1; padding: 12px; border: none; cursor: pointer; color: white; font-size: 14px; font-weight: 600; border-radius: 10px; transition: 0.2s; }
-        .btn-on { background: var(--accent-on); } .btn-on:active { background: var(--accent-on-hover); }
-        .btn-off { background: var(--accent-off); } .btn-off:active { background: var(--accent-off-hover); }
-        .btn-blue { background: var(--accent-blue); width: 100%; margin-top: 15px; } .btn-blue:active { background: var(--accent-blue-hover); }
-        
-        .schedule-panel { background: var(--bg-card); padding: 20px; max-width: 500px; margin: 0 auto; border-radius: 16px; border: 1px solid var(--border-color); text-align: left; }
-        .schedule-panel h3 { margin-top: 0; text-align: center; color: var(--text-main); }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 5px; }
-        select, input[type="time"] { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: white; font-size: 14px; outline: none; box-sizing: border-box;}
-        
-        .jadwal-list { margin-top: 20px; font-size: 13px; }
-        .jadwal-item { background: var(--bg-input); padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 10px; border-left: 4px solid var(--accent-blue);}
-        .jadwal-info { display: flex; justify-content: space-between; align-items: center; }
-        .jadwal-actions { display: flex; gap: 5px; justify-content: flex-end; }
-        .btn-small { padding: 6px 12px; font-size: 12px; flex: 0; border-radius: 6px; }
-        .btn-edit { background: var(--accent-warn); } .btn-edit:active { background: var(--accent-warn-hover); }
-        .btn-del { background: var(--accent-off); } .btn-del:active { background: var(--accent-off-hover); }
-        
-        .jadwal-badge { background: #475569; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;}
-        .badge-on { color: var(--accent-on); } .badge-off { color: var(--accent-off); }
+        * { box-sizing: border-box; }
 
-        #log-container { margin-top: 30px; padding: 16px; background: #020617; border-radius: 12px; font-size: 13px; border: 1px solid var(--border-color); max-width: 500px; margin-left: auto; margin-right: auto; text-align: left; font-family: monospace;}
-        #log { color: #38bdf8; word-break: break-all; }
+        body {
+            margin: 0;
+            padding: 0 20px 80px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .wrap { max-width: 620px; margin: 0 auto; }
+
+        /* ---------- Header ---------- */
+        header {
+            padding: 40px 0 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+            letter-spacing: -0.01em;
+        }
+        .conn {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--text-muted);
+            transition: background 0.3s;
+        }
+        .dot.live { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+        .dot.down { background: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
+
+        /* ---------- Section labels ---------- */
+        .section-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin: 40px 0 16px;
+        }
+
+        /* ---------- Tabs ---------- */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-top: 24px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 4px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px 0;
+            border: none;
+            border-radius: 7px;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .tab-btn.active { background: var(--surface); color: var(--text); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ---------- Rooms ---------- */
+        .room {
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .room:first-of-type { padding-top: 4px; }
+        .room-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .room-name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 17px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .room-icon { font-size: 18px; }
+        .room-sensor {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12.5px;
+            color: var(--accent);
+        }
+        .room-sensor.offline { color: var(--text-muted); font-style: italic; }
+
+        .toggle {
+            display: flex;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .toggle button {
+            flex: 1;
+            padding: 11px 0;
+            border: none;
+            background: var(--surface);
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .toggle button:first-child { border-right: 1px solid var(--border); }
+        .toggle .btn-on:active,
+        .toggle .btn-on.flash { background: var(--accent-soft); color: var(--accent); }
+        .toggle .btn-off:active,
+        .toggle .btn-off.flash { background: var(--danger-soft); color: var(--danger); }
+
+        /* ---------- Schedule form ---------- */
+        .schedule-form {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px;
+        }
+        .form-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            margin: 0 0 18px;
+        }
+        .form-row { display: flex; gap: 12px; margin-bottom: 14px; }
+        .form-group { flex: 1; }
+        .form-group.full { flex: none; width: 100%; }
+        label {
+            display: block;
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-family: 'IBM Plex Mono', monospace;
+            letter-spacing: 0.03em;
+        }
+        select, input[type="time"] {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            color-scheme: dark;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+        }
+        select:focus, input[type="time"]:focus { border-color: var(--accent); }
+
+        .form-actions { display: flex; gap: 10px; margin-top: 4px; }
+        .btn-primary, .btn-cancel {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+        }
+        .btn-primary { flex: 1; background: var(--text); color: var(--surface); }
+        .btn-primary.editing { background: var(--warn); }
+        .btn-cancel { background: var(--danger-soft); color: var(--danger); display: none; }
+
+        /* ---------- Schedule list ---------- */
+        .jadwal-list { margin-top: 26px; }
+        .jadwal-empty {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13.5px;
+            padding: 20px 0;
+        }
+        .jadwal-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .jadwal-item:last-child { border-bottom: none; }
+        .jadwal-time {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            min-width: 62px;
+        }
+        .jadwal-mid { flex: 1; margin-left: 14px; }
+        .jadwal-room { font-size: 13.5px; font-weight: 500; }
+        .jadwal-status {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+        }
+        .jadwal-status.on { color: var(--accent); }
+        .jadwal-status.off { color: var(--danger); }
+        .jadwal-actions { display: flex; gap: 6px; }
+        .icon-btn {
+            border: none;
+            background: none;
+            font-size: 12.5px;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px 6px;
+        }
+        .icon-btn:hover { color: var(--text); }
+        .icon-btn.del:hover { color: var(--danger); }
+
+        /* ---------- Status bar ---------- */
+        .status-bar {
+            margin-top: 40px;
+            padding: 12px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12.5px;
+            color: var(--text-muted);
+        }
+        #log { color: var(--text); word-break: break-all; }
     </style>
 </head>
 <body>
-    <h1 class="header-title">⚡ Sapongku Control Panel <span class="header-subtitle">v1.1.4</span></h1>
+    <div class="wrap">
+        <header>
+            <div>
+                <div class="eyebrow">Sapongku · v1.1.5</div>
+                <h1>Panel Kendali Rumah</h1>
+            </div>
+            <div class="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">Menghubungkan…</span></div>
+        </header>
 
-    <div class="grid-container">
-        <!-- RUANG TAMU -->
-        <div class="card">
-            <h3>🛋️ Ruang Tamu</h3>
-            <div id="sensor-ruang_tamu" class="sensor-panel">
-                <div class="sensor-offline">Mencari sinyal sensor...</div>
-            </div>
-            <div class="btn-group">
-                <button class="btn-on" onclick="kirim('ruang_tamu', 'saklar1', 'on')">ON</button>
-                <button class="btn-off" onclick="kirim('ruang_tamu', 'saklar1', 'off')">OFF</button>
-            </div>
-        </div>
-        
-        <!-- TERAS -->
-        <div class="card">
-            <h3>🪑 Teras</h3>
-            <div class="btn-group">
-                <button class="btn-on" onclick="kirim('ruang_tamu', 'saklar2', 'on')">ON</button>
-                <button class="btn-off" onclick="kirim('ruang_tamu', 'saklar2', 'off')">OFF</button>
-            </div>
+        <div class="tabs">
+            <button class="tab-btn active" id="tab-btn-kontrol" onclick="showTab('kontrol')">Kontrol</button>
+            <button class="tab-btn" id="tab-btn-jadwal" onclick="showTab('jadwal')">Jadwal</button>
         </div>
 
-        <!-- KAMAR -->
-        <div class="card">
-            <h3>🛏️ Kamar</h3>
-            <div class="btn-group">
-                <button class="btn-on" onclick="kirim('ruang_tamu', 'saklar3', 'on')">ON</button>
-                <button class="btn-off" onclick="kirim('ruang_tamu', 'saklar3', 'off')">OFF</button>
+        <div class="tab-panel active" id="tab-kontrol">
+        <div class="section-label">Ruangan</div>
+
+        <div class="room">
+            <div class="room-top">
+                <div class="room-name"><span class="room-icon">🛋️</span> Ruang Tamu</div>
+                <div class="room-sensor offline" id="sensor-ruang_tamu">Mencari sensor…</div>
+            </div>
+            <div class="toggle">
+                <button class="btn-on" onclick="kirim('ruang_tamu', 'saklar1', 'on', this)">NYALA</button>
+                <button class="btn-off" onclick="kirim('ruang_tamu', 'saklar1', 'off', this)">MATI</button>
             </div>
         </div>
 
-        <!-- DAPUR -->
-        <div class="card">
-            <h3>🍱 Dapur</h3>
-            <div id="sensor-dapur" class="sensor-panel">
-                <div class="sensor-offline">Mencari sinyal sensor...</div>
+        <div class="room">
+            <div class="room-top">
+                <div class="room-name"><span class="room-icon">🪑</span> Teras</div>
             </div>
-            <div class="btn-group">
-                <button class="btn-on" onclick="kirim('dapur', 'saklar1', 'on')">ON</button>
-                <button class="btn-off" onclick="kirim('dapur', 'saklar1', 'off')">OFF</button>
+            <div class="toggle">
+                <button class="btn-on" onclick="kirim('ruang_tamu', 'saklar2', 'on', this)">NYALA</button>
+                <button class="btn-off" onclick="kirim('ruang_tamu', 'saklar2', 'off', this)">MATI</button>
             </div>
         </div>
-    </div>
 
-    <!-- PANEL JADWAL (TETAP SAMA SEPERTI KODE ASLI) -->
-    <div class="schedule-panel">
-        <h3 id="form-title">⏰ Tambah Jadwal Baru</h3>
-        <div class="form-group">
-            <label>Pilih Perangkat</label>
-            <select id="input-target">
-                <option value="ruang_tamu|saklar1">🛋️ Ruang Tamu</option>
-                <option value="ruang_tamu|saklar2">🪑 Teras</option>
-                <option value="ruang_tamu|saklar3">🛏️ Kamar</option>
-                <option value="dapur|saklar1">🍱 Dapur</option>
-            </select>
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex: 1;">
-                <label>Aksi</label>
-                <select id="input-status">
-                    <option value="on">NYALAKAN (ON)</option>
-                    <option value="off">MATIKAN (OFF)</option>
-                </select>
+        <div class="room">
+            <div class="room-top">
+                <div class="room-name"><span class="room-icon">🛏️</span> Kamar</div>
             </div>
-            <div class="form-group" style="flex: 1;">
-                <label>Jam (Setiap Hari)</label>
-                <input type="time" id="input-waktu" required>
+            <div class="toggle">
+                <button class="btn-on" onclick="kirim('ruang_tamu', 'saklar3', 'on', this)">NYALA</button>
+                <button class="btn-off" onclick="kirim('ruang_tamu', 'saklar3', 'off', this)">MATI</button>
             </div>
         </div>
-        <div style="display: flex; gap: 10px;">
-            <button class="btn-blue" id="btn-submit" onclick="submitJadwal()">+ Tambah Jadwal</button>
-            <button class="btn-del" id="btn-cancel" onclick="batalEdit()" style="display: none; margin-top: 15px;">Batal</button>
-        </div>
-        <div class="jadwal-list" id="list-jadwal">
-            <div style="text-align: center; color: #64748b; margin-top: 15px;">Memuat jadwal...</div>
-        </div>
-    </div>
 
-    <div id="log-container">
-        <div style="color: #64748b; margin-bottom: 5px; font-size: 11px;">Terminal Status</div>
-        <div id="log">Menunggu perintah...</div>
+        <div class="room">
+            <div class="room-top">
+                <div class="room-name"><span class="room-icon">🍱</span> Dapur</div>
+                <div class="room-sensor offline" id="sensor-dapur">Mencari sensor…</div>
+            </div>
+            <div class="toggle">
+                <button class="btn-on" onclick="kirim('dapur', 'saklar1', 'on', this)">NYALA</button>
+                <button class="btn-off" onclick="kirim('dapur', 'saklar1', 'off', this)">MATI</button>
+            </div>
+        </div>
+
+        </div>
+
+        <div class="tab-panel" id="tab-jadwal">
+        <div class="section-label">Jadwal Otomatis</div>
+
+        <div class="schedule-form">
+            <h3 class="form-title" id="form-title">Tambah Jadwal Baru</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Perangkat</label>
+                    <select id="input-target">
+                        <option value="ruang_tamu|saklar1">🛋️ Ruang Tamu</option>
+                        <option value="ruang_tamu|saklar2">🪑 Teras</option>
+                        <option value="ruang_tamu|saklar3">🛏️ Kamar</option>
+                        <option value="dapur|saklar1">🍱 Dapur</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Aksi</label>
+                    <select id="input-status">
+                        <option value="on">Nyalakan</option>
+                        <option value="off">Matikan</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Jam (setiap hari)</label>
+                    <input type="time" id="input-waktu" required>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn-primary" id="btn-submit" onclick="submitJadwal()">+ Tambah Jadwal</button>
+                <button class="btn-cancel" id="btn-cancel" onclick="batalEdit()">Batal</button>
+            </div>
+
+            <div class="jadwal-list" id="list-jadwal">
+                <div class="jadwal-empty">Memuat jadwal…</div>
+            </div>
+        </div>
+        </div>
+
+        <div class="status-bar">
+            <span id="log">Menunggu perintah…</span>
+        </div>
     </div>
 
     <script>
-        // ----------------------------------------------------
-        // LOGIKA WEBSOCKET FRONTEND (BARU)
-        // ----------------------------------------------------
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = protocol + '//' + window.location.host;
         const ws = new WebSocket(wsUrl);
 
-        ws.onopen = () => tulisLog("Terhubung ke Kordinasi Pusat", "#34d399");
-        ws.onclose = () => tulisLog("Koneksi ke Pusat Terputus!", "#f87171");
+        ws.onopen = () => { setConn(true); tulisLog("Terhubung ke Kordinasi Pusat", "ok"); };
+        ws.onclose = () => { setConn(false); tulisLog("Koneksi ke Pusat Terputus!", "err"); };
 
         ws.onmessage = (event) => {
             const pesan = JSON.parse(event.data);
-            
-            // Perbarui UI Sensor berdasarkan sumber data ('ruang_tamu' atau 'dapur')
             if (pesan.source && pesan.data && pesan.data.type === 'sensor') {
                 const elemenSensor = document.getElementById('sensor-' + pesan.source);
-                if (elemenSensor) {
-                    let html = '';
-                    
-                    // Render DHT22 Sensor 1
-                    if (pesan.data.dht22_1) {
-                        html += `<div class="sensor-row"><span>Sensor 1:</span> <span>🌡️ ${pesan.data.dht22_1.temperature}°C &nbsp; 💧 ${pesan.data.dht22_1.humidity}%</span></div>`;
-                    }
-                    // Render DHT22 Sensor 2 (Jika ada)
-                    if (pesan.data.dht22_2) {
-                        html += `<div class="sensor-row"><span>Sensor 2:</span> <span>🌡️ ${pesan.data.dht22_2.temperature}°C &nbsp; 💧 ${pesan.data.dht22_2.humidity}%</span></div>`;
-                    }
-                    
-                    elemenSensor.innerHTML = html;
+                if (elemenSensor && pesan.data.dht22_1) {
+                    elemenSensor.classList.remove('offline');
+                    elemenSensor.innerHTML = `🌡️ ${pesan.data.dht22_1.temperature}°C &nbsp;·&nbsp; 💧 ${pesan.data.dht22_1.humidity}%`;
                 }
             }
         };
 
-        // ----------------------------------------------------
-        // SCRIPT CRUD JADWAL & KONTROL (SAMA SEPERTI SEBELUMNYA)
-        // ----------------------------------------------------
-        let editModeId = null; 
-        let globalJadwalData = []; 
+        function setConn(live) {
+            const dot = document.getElementById('conn-dot');
+            const text = document.getElementById('conn-text');
+            dot.classList.remove('live', 'down');
+            dot.classList.add(live ? 'live' : 'down');
+            text.innerText = live ? 'Terhubung' : 'Terputus';
+        }
 
-        function kirim(ruangan, saklar, status) {
-            tulisLog("Mengirim " + status.toUpperCase() + " ke " + saklar + "...", "#fbbf24");
+        function showTab(name) {
+            document.getElementById('tab-kontrol').classList.toggle('active', name === 'kontrol');
+            document.getElementById('tab-jadwal').classList.toggle('active', name === 'jadwal');
+            document.getElementById('tab-btn-kontrol').classList.toggle('active', name === 'kontrol');
+            document.getElementById('tab-btn-jadwal').classList.toggle('active', name === 'jadwal');
+        }
+
+        let editModeId = null;
+        let globalJadwalData = [];
+
+        function kirim(ruangan, saklar, status, btnEl) {
+            if (btnEl) {
+                btnEl.classList.add('flash');
+                setTimeout(() => btnEl.classList.remove('flash'), 400);
+            }
+            tulisLog("Mengirim " + status.toUpperCase() + " ke " + saklar + "…", "warn");
             fetch('/api/' + ruangan + '/' + saklar, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: status })
             }).then(res => res.json()).then(data => {
-                if(data.error) tulisLog("Error: " + data.error, "#f87171");
-                else tulisLog("Sukses: " + data.target, "#34d399");
-            }).catch(err => tulisLog("Gagal koneksi server", "#f87171"));
+                if (data.error) tulisLog("Error: " + data.error, "err");
+                else tulisLog("Sukses: " + data.target, "ok");
+            }).catch(() => tulisLog("Gagal koneksi server", "err"));
         }
 
         function submitJadwal() {
             const target = document.getElementById('input-target').value;
             const status = document.getElementById('input-status').value;
             const waktu = document.getElementById('input-waktu').value;
-            if(!waktu) return alert("Pilih jam terlebih dahulu!");
-            
+            if (!waktu) return alert("Pilih jam terlebih dahulu!");
+
             const [ruangan, saklar] = target.split('|');
             const payload = { ruangan, saklar, status, waktu };
             const isEdit = editModeId !== null;
             const url = isEdit ? '/api/jadwal/' + editModeId : '/api/jadwal';
             const method = isEdit ? 'PUT' : 'POST';
 
-            tulisLog(isEdit ? "Menyimpan perubahan..." : "Menambahkan jadwal...", "#fbbf24");
+            tulisLog(isEdit ? "Menyimpan perubahan…" : "Menambahkan jadwal…", "warn");
             fetch(url, {
                 method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             }).then(res => res.json()).then(data => {
-                tulisLog(data.message, "#34d399"); batalEdit(); loadJadwal();
+                tulisLog(data.message, "ok"); batalEdit(); loadJadwal();
             });
         }
 
         function hapusJadwal(id) {
-            if(!confirm("Yakin ingin menghapus jadwal ini?")) return;
-            tulisLog("Menghapus jadwal...", "#fbbf24");
+            if (!confirm("Yakin ingin menghapus jadwal ini?")) return;
+            tulisLog("Menghapus jadwal…", "warn");
             fetch('/api/jadwal/' + id, { method: 'DELETE' }).then(res => res.json()).then(data => {
-                tulisLog(data.message, "#f87171"); if (editModeId === id) batalEdit(); loadJadwal();
+                tulisLog(data.message, "err"); if (editModeId === id) batalEdit(); loadJadwal();
             });
         }
 
         function editJadwal(id) {
             const jadwal = globalJadwalData.find(j => j.id === id);
-            if(!jadwal) return;
+            if (!jadwal) return;
             document.getElementById('input-target').value = jadwal.ruangan + '|' + jadwal.saklar;
             document.getElementById('input-status').value = jadwal.status;
             document.getElementById('input-waktu').value = jadwal.waktu;
             editModeId = id;
-            document.getElementById('form-title').innerText = "✏️ Edit Jadwal";
+            document.getElementById('form-title').innerText = "Edit Jadwal";
             const btnSubmit = document.getElementById('btn-submit');
-            btnSubmit.innerText = "Simpan Perubahan"; btnSubmit.style.background = "var(--accent-warn)";
+            btnSubmit.innerText = "Simpan Perubahan";
+            btnSubmit.classList.add('editing');
             document.getElementById('btn-cancel').style.display = "block";
-            window.scrollTo({ top: document.querySelector('.schedule-panel').offsetTop - 20, behavior: 'smooth' });
+            window.scrollTo({ top: document.querySelector('.schedule-form').offsetTop - 20, behavior: 'smooth' });
         }
 
         function batalEdit() {
             editModeId = null;
-            document.getElementById('form-title').innerText = "⏰ Tambah Jadwal Baru";
+            document.getElementById('form-title').innerText = "Tambah Jadwal Baru";
             const btnSubmit = document.getElementById('btn-submit');
-            btnSubmit.innerText = "+ Tambah Jadwal"; btnSubmit.style.background = "var(--accent-blue)";
+            btnSubmit.innerText = "+ Tambah Jadwal";
+            btnSubmit.classList.remove('editing');
             document.getElementById('btn-cancel').style.display = "none";
             document.getElementById('input-waktu').value = "";
         }
 
         function loadJadwal() {
             fetch('/api/jadwal').then(res => res.json()).then(data => {
-                globalJadwalData = data; 
+                globalJadwalData = data;
                 const listEl = document.getElementById('list-jadwal');
-                if(data.length === 0) { listEl.innerHTML = '<div style="text-align: center; color: #64748b; margin-top: 15px;">Belum ada jadwal aktif.</div>'; return; }
-                
-                let html = '<div style="margin-top: 15px; margin-bottom: 10px; font-weight: bold;">Jadwal Aktif:</div>';
+                if (data.length === 0) {
+                    listEl.innerHTML = '<div class="jadwal-empty">Belum ada jadwal aktif.</div>';
+                    return;
+                }
+                let html = '';
                 data.forEach(j => {
-                    const styleClass = j.status === 'on' ? 'badge-on' : 'badge-off';
-                    html += `<div class="jadwal-item"><div class="jadwal-info"><span>${j.ruangan.replace('_', ' ').toUpperCase()} (${j.saklar})</span><div style="display: flex; gap: 8px; align-items: center;"><span class="jadwal-badge ${styleClass}">${j.status.toUpperCase()}</span><span style="font-weight: bold; color: white;">${j.waktu}</span></div></div><div class="jadwal-actions"><button class="btn-small btn-edit" onclick="editJadwal(${j.id})">Edit</button><button class="btn-small btn-del" onclick="hapusJadwal(${j.id})">Hapus</button></div></div>`;
+                    const statusClass = j.status === 'on' ? 'on' : 'off';
+                    const statusLabel = j.status === 'on' ? 'NYALAKAN' : 'MATIKAN';
+                    html += `<div class="jadwal-item">
+                        <div class="jadwal-time">${j.waktu}</div>
+                        <div class="jadwal-mid">
+                            <div class="jadwal-room">${j.ruangan.replace('_', ' ').toUpperCase()} · ${j.saklar}</div>
+                            <div class="jadwal-status ${statusClass}">${statusLabel}</div>
+                        </div>
+                        <div class="jadwal-actions">
+                            <button class="icon-btn" onclick="editJadwal(${j.id})">Edit</button>
+                            <button class="icon-btn del" onclick="hapusJadwal(${j.id})">Hapus</button>
+                        </div>
+                    </div>`;
                 });
                 listEl.innerHTML = html;
             });
         }
 
-        function tulisLog(pesan, warna) {
+        function tulisLog(pesan, tone) {
             const logEl = document.getElementById('log');
-            logEl.innerText = "> " + pesan;
-            logEl.style.color = warna;
+            logEl.innerText = pesan;
+            logEl.style.color = tone === 'ok' ? 'var(--accent)' : tone === 'err' ? 'var(--danger)' : tone === 'warn' ? 'var(--warn)' : 'var(--text)';
         }
 
         loadJadwal();

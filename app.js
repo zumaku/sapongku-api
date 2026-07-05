@@ -238,7 +238,7 @@ muatDariDatabase();
 // PENTING: Gunakan server.listen agar Express dan WebSocket Frontend berjalan di port yang sama
 server.listen(port, '0.0.0.0', function () {
     console.log("=====================================");
-    console.log(`🚀 Sapongku API v.${packageJson.version || '1.0.0'} Berjalan!`);
+    console.log(`🚀 Sapongku API v.${packageJson.version || '1.1.5'} Berjalan!`);
     console.log(`📡 Node Version: ${process.version}`);
     console.log(`🌐 Akses Dashboard: http://localhost:${port}`);
     console.log("=====================================\n");
