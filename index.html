@@ -17,13 +17,10 @@
             --text-muted: #8C8C92;
             --border: #2C2C30;
             --accent: #6FBE8C;
-            /* sage green — ON / active */
             --accent-soft: #1E2E23;
             --danger: #E07A6C;
-            /* muted clay — OFF / hapus */
             --danger-soft: #332020;
             --warn: #D9AC5C;
-            /* muted amber — edit */
             --warn-soft: #332A18;
         }
 
@@ -222,6 +219,55 @@
             color: var(--danger);
         }
 
+        /* ---------- Switch Toggle Mini ---------- */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .switch .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-muted);
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        .switch input:checked + .slider {
+            background-color: var(--accent-soft);
+            border-color: var(--accent);
+        }
+
+        .switch input:checked + .slider:before {
+            transform: translateX(20px);
+            background-color: var(--accent);
+        }
+
         /* ---------- Schedule form ---------- */
         .schedule-form {
             background: var(--surface);
@@ -414,7 +460,7 @@
     <div class="wrap">
         <header>
             <div>
-                <div class="eyebrow">Sapongku · v1.1.5</div>
+                <div class="eyebrow">Sapongku · v1.1.6</div>
                 <h1>Panel Kendali Rumah</h1>
             </div>
             <div class="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">Menghubungkan…</span></div>
@@ -470,6 +516,26 @@
                 </div>
             </div>
 
+            <!-- Modul Meja Kerja yang Sudah Disatukan -->
+            <div class="room">
+                <div class="room-top">
+                    <div class="room-name"><span class="room-icon">💻</span> Meja Kerja</div>
+                    
+                    <!-- Wrapper flex untuk menyandingkan teks dan toggle switch -->
+                    <div style="display: flex; align-items: start; gap: 10px;">
+                        <span style="font-size: 18px; color: var(--text-muted); font-weight: 500;">👏</span>
+                        <label class="switch" title="Toggle Sensor Tepuk">
+                            <input type="checkbox" id="toggle-clap" onchange="toggleClap(this)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="toggle">
+                    <button class="btn-on" onclick="kirim('meja_kerja', 'relay1', 'on', this)">NYALA</button>
+                    <button class="btn-off" onclick="kirim('meja_kerja', 'relay1', 'off', this)">MATI</button>
+                </div>
+            </div>
+
         </div>
 
         <div class="tab-panel" id="tab-jadwal">
@@ -486,6 +552,9 @@
                             <option value="ruang_tamu|saklar2">🪑 Teras</option>
                             <option value="ruang_tamu|saklar3">🛏️ Kamar</option>
                             <option value="dapur|saklar1">🍱 Dapur</option>
+                            <!-- Pilihan penjadwalan meja kerja -->
+                            <option value="meja_kerja|relay1">💻 Meja Kerja - Lampu</option>
+                            <option value="meja_kerja|clap_sensor">👏 Meja Kerja - Sensor Tepuk</option>
                         </select>
                     </div>
                 </div>
@@ -528,11 +597,25 @@
 
         ws.onmessage = (event) => {
             const pesan = JSON.parse(event.data);
-            if (pesan.source && pesan.data && pesan.data.type === 'sensor') {
-                const elemenSensor = document.getElementById('sensor-' + pesan.source);
-                if (elemenSensor && pesan.data.dht22_1) {
-                    elemenSensor.classList.remove('offline');
-                    elemenSensor.innerHTML = `🌡️ ${pesan.data.dht22_1.temperature}°C &nbsp;·&nbsp; 💧 ${pesan.data.dht22_1.humidity}%`;
+            
+            if (pesan.source && pesan.data) {
+                // 1. Penanganan Data Sensor
+                if (pesan.data.type === 'sensor') {
+                    const elemenSensor = document.getElementById('sensor-' + pesan.source);
+                    if (elemenSensor && pesan.data.dht22_1) {
+                        elemenSensor.classList.remove('offline');
+                        elemenSensor.innerHTML = `🌡️ ${pesan.data.dht22_1.temperature}°C &nbsp;·&nbsp; 💧 ${pesan.data.dht22_1.humidity}%`;
+                    }
+                } 
+                // 2. Penanganan Data Status Perangkat
+                else if (pesan.data.type === 'state') {
+                    if (pesan.source === 'meja_kerja') {
+                        const clapToggle = document.getElementById('toggle-clap');
+                        // Syarat document.activeElement mencegah toggle berkedip saat sedang Anda tekan
+                        if (clapToggle && document.activeElement !== clapToggle) {
+                            clapToggle.checked = (pesan.data.clap_sensor === 'on');
+                        }
+                    }
                 }
             }
         };
@@ -569,6 +652,11 @@
                 if (data.error) tulisLog("Error: " + data.error, "err");
                 else tulisLog("Sukses: " + data.target, "ok");
             }).catch(() => tulisLog("Gagal koneksi server", "err"));
+        }
+
+        // Fungsi khusus untuk Switch Toggle Sensor Tepuk
+        function toggleClap(el) {
+            kirim('meja_kerja', 'clap_sensor', el.checked ? 'on' : 'off', null);
         }
 
         function submitJadwal() {

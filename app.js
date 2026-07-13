@@ -19,6 +19,8 @@ const wss = new WebSocket.Server({ server });
 
 const ESP_RUANG_TAMU_WS = process.env.ESP_RUANG_TAMU_WS; 
 const ESP_DAPUR_WS = process.env.ESP_DAPUR_WS;  
+const ESP_MEJA_KERJA_WS = process.env.ESP_MEJA_KERJA_WS; // Tambahan untuk Meja Kerja
+
 const DB_FILE = path.join(__dirname, 'jadwal.json'); 
 
 app.use(express.json());
@@ -39,7 +41,8 @@ function teruskanKeFrontend(idRuangan, payload) {
 // --- 2. MANAJEMEN KONEKSI WEBSOCKET ESP (DENGAN HEARTBEAT) ---
 const espClients = {
     ruang_tamu: null,
-    dapur: null
+    dapur: null,
+    meja_kerja: null // Tambahan untuk Meja Kerja
 };
 
 function hubungkanKeESP(idRuangan, wsUrl) {
@@ -66,7 +69,7 @@ function hubungkanKeESP(idRuangan, wsUrl) {
         try {
             const parsedData = JSON.parse(data.toString());
             // Broadcast ke frontend jika itu data sensor
-            if (parsedData.type === 'sensor') {
+            if (parsedData.type === 'sensor' || parsedData.type === 'state') {
                 teruskanKeFrontend(idRuangan, parsedData);
             }
         } catch (err) {
@@ -106,6 +109,7 @@ function hubungkanKeESP(idRuangan, wsUrl) {
 // Inisialisasi koneksi ke mikrokontroler
 hubungkanKeESP('ruang_tamu', ESP_RUANG_TAMU_WS);
 hubungkanKeESP('dapur', ESP_DAPUR_WS);
+hubungkanKeESP('meja_kerja', ESP_MEJA_KERJA_WS); // Tambahan untuk Meja Kerja
 
 
 // --- 3. FUNGSI DATABASE LOKAL ---
@@ -173,6 +177,10 @@ app.post('/api/ruang_tamu/saklar2', async (req, res) => { try { res.json(await k
 app.post('/api/ruang_tamu/saklar3', async (req, res) => { try { res.json(await kirimPerintahKeEsp('ruang_tamu', 'servo3', req.body.status)); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.post('/api/dapur/saklar1', async (req, res) => { try { res.json(await kirimPerintahKeEsp('dapur', 'servo1', req.body.status)); } catch (e) { res.status(400).json({ error: e.message }); } });
 
+// Routing khusus untuk ESP Meja Kerja
+app.post('/api/meja_kerja/relay1', async (req, res) => { try { res.json(await kirimPerintahKeEsp('meja_kerja', 'relay1', req.body.status)); } catch (e) { res.status(400).json({ error: e.message }); } });
+app.post('/api/meja_kerja/clap_sensor', async (req, res) => { try { res.json(await kirimPerintahKeEsp('meja_kerja', 'clap_sensor', req.body.status)); } catch (e) { res.status(400).json({ error: e.message }); } });
+
 
 // --- 6. ROUTING API (CRUD PENJADWALAN) ---
 app.post('/api/jadwal', (req, res) => {
@@ -238,7 +246,7 @@ muatDariDatabase();
 // PENTING: Gunakan server.listen agar Express dan WebSocket Frontend berjalan di port yang sama
 server.listen(port, '0.0.0.0', function () {
     console.log("=====================================");
-    console.log(`🚀 Sapongku API v.${packageJson.version || '1.1.5'} Berjalan!`);
+    console.log(`🚀 Sapongku API v.${packageJson.version || '1.1.6'} Berjalan!`);
     console.log(`📡 Node Version: ${process.version}`);
     console.log(`🌐 Akses Dashboard: http://localhost:${port}`);
     console.log("=====================================\n");
