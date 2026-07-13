@@ -463,7 +463,10 @@
                 <div class="eyebrow">Sapongku · v1.1.6</div>
                 <h1>Panel Kendali Rumah</h1>
             </div>
-            <div class="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">Menghubungkan…</span></div>
+            <div class="conn">
+                <span id="network-speed" style="margin-right: 8px; font-weight: 500;">Ping: - ms</span>
+                <span class="dot" id="conn-dot"></span><span id="conn-text">Menghubungkan…</span>
+            </div>
         </header>
 
         <div class="tabs">
@@ -592,30 +595,39 @@
         const wsUrl = protocol + '//' + window.location.host;
         const ws = new WebSocket(wsUrl);
 
-        ws.onopen = () => { setConn(true); tulisLog("Terhubung ke Kordinasi Pusat", "ok"); };
-        ws.onclose = () => { setConn(false); tulisLog("Koneksi ke Pusat Terputus!", "err"); };
+        ws.onopen = () => { 
+            setConn(true); 
+            tulisLog("Terhubung ke Kordinasi Pusat", "ok"); 
+            // Mulai pengecekan kecepatan jaringan (ping)
+            pingInterval = setInterval(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'check_speed', time: Date.now() }));
+                }
+            }, 2000);
+        };
+        ws.onclose = () => { 
+            setConn(false); 
+            tulisLog("Koneksi ke Pusat Terputus!", "err"); 
+            if (pingInterval) clearInterval(pingInterval);
+            document.getElementById('network-speed').innerText = 'Ping: - ms';
+        };
 
         ws.onmessage = (event) => {
             const pesan = JSON.parse(event.data);
-            
-            if (pesan.source && pesan.data) {
-                // 1. Penanganan Data Sensor
-                if (pesan.data.type === 'sensor') {
-                    const elemenSensor = document.getElementById('sensor-' + pesan.source);
-                    if (elemenSensor && pesan.data.dht22_1) {
-                        elemenSensor.classList.remove('offline');
-                        elemenSensor.innerHTML = `🌡️ ${pesan.data.dht22_1.temperature}°C &nbsp;·&nbsp; 💧 ${pesan.data.dht22_1.humidity}%`;
-                    }
-                } 
-                // 2. Penanganan Data Status Perangkat
-                else if (pesan.data.type === 'state') {
-                    if (pesan.source === 'meja_kerja') {
-                        const clapToggle = document.getElementById('toggle-clap');
-                        // Syarat document.activeElement mencegah toggle berkedip saat sedang Anda tekan
-                        if (clapToggle && document.activeElement !== clapToggle) {
-                            clapToggle.checked = (pesan.data.clap_sensor === 'on');
-                        }
-                    }
+            if (pesan.type === 'speed_result') {
+                const latency = Date.now() - pesan.clientTime;
+                let speedText = `Ping: ${latency} ms`;
+                if (navigator.connection && navigator.connection.downlink) {
+                    speedText += ` | ${navigator.connection.downlink} Mbps`;
+                }
+                document.getElementById('network-speed').innerText = speedText;
+                return;
+            }
+            if (pesan.source && pesan.data && pesan.data.type === 'sensor') {
+                const elemenSensor = document.getElementById('sensor-' + pesan.source);
+                if (elemenSensor && pesan.data.dht22_1) {
+                    elemenSensor.classList.remove('offline');
+                    elemenSensor.innerHTML = `🌡️ ${pesan.data.dht22_1.temperature}°C &nbsp;·&nbsp; 💧 ${pesan.data.dht22_1.humidity}%`;
                 }
             }
         };
@@ -635,6 +647,7 @@
             document.getElementById('tab-btn-jadwal').classList.toggle('active', name === 'jadwal');
         }
 
+        let pingInterval;
         let editModeId = null;
         let globalJadwalData = [];
 

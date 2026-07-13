@@ -17,6 +17,20 @@ const server = http.createServer(app);
 // Kaitkan WebSocket Server ke HTTP Server untuk melayani browser frontend
 const wss = new WebSocket.Server({ server }); 
 
+// Fungsi untuk menerima ping dari frontend dan mengembalikan pong untuk menghitung kecepatan jaringan (latency)
+wss.on('connection', (ws) => {
+    ws.on('message', (message) => {
+        try {
+            const data = JSON.parse(message);
+            if (data.type === 'check_speed') {
+                ws.send(JSON.stringify({ type: 'speed_result', clientTime: data.time }));
+            }
+        } catch (err) {
+            console.error('[WS] Error memproses pesan dari frontend:', err.message);
+        }
+    });
+});
+
 const ESP_RUANG_TAMU_WS = process.env.ESP_RUANG_TAMU_WS; 
 const ESP_DAPUR_WS = process.env.ESP_DAPUR_WS;  
 const ESP_MEJA_KERJA_WS = process.env.ESP_MEJA_KERJA_WS; // Tambahan untuk Meja Kerja
