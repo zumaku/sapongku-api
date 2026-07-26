@@ -460,7 +460,7 @@
     <div class="wrap">
         <header>
             <div>
-                <div class="eyebrow">Sapongku · v1.1.6</div>
+                <div class="eyebrow">Sapongku · v1.1.7</div>
                 <h1>Panel Kendali Rumah</h1>
             </div>
             <div class="conn">
@@ -612,8 +612,10 @@
             document.getElementById('network-speed').innerText = 'Ping: - ms';
         };
 
-        ws.onmessage = (event) => {
+       ws.onmessage = (event) => {
             const pesan = JSON.parse(event.data);
+            
+            // Cek jika pesan adalah hasil tes ping
             if (pesan.type === 'speed_result') {
                 const latency = Date.now() - pesan.clientTime;
                 let speedText = `Ping: ${latency} ms`;
@@ -623,12 +625,32 @@
                 document.getElementById('network-speed').innerText = speedText;
                 return;
             }
-            if (pesan.source && pesan.data && pesan.data.type === 'sensor') {
-                const elemenSensor = document.getElementById('sensor-' + pesan.source);
-                if (elemenSensor && pesan.data.dht22_1) {
-                    elemenSensor.classList.remove('offline');
-                    elemenSensor.innerHTML = `🌡️ ${pesan.data.dht22_1.temperature}°C &nbsp;·&nbsp; 💧 ${pesan.data.dht22_1.humidity}%`;
+
+            // Tangani data dari ESP (memiliki source dan data)
+            if (pesan.source && pesan.data) {
+                
+                // 1. Penanganan Data Sensor Suhu & Kelembaban
+                if (pesan.data.type === 'sensor') {
+                    const elemenSensor = document.getElementById('sensor-' + pesan.source);
+                    if (elemenSensor && pesan.data.dht22_1) {
+                        elemenSensor.classList.remove('offline');
+                        elemenSensor.innerHTML = `🌡️ ${pesan.data.dht22_1.temperature}°C &nbsp;·&nbsp; 💧 ${pesan.data.dht22_1.humidity}%`;
+                    }
+                } 
+                
+                // 2. Penanganan Sinkronisasi Status Perangkat (Sync Toggle)
+                else if (pesan.data.type === 'state') {
+                    if (pesan.source === 'meja_kerja') {
+                        const clapToggle = document.getElementById('toggle-clap');
+                        
+                        // Syarat document.activeElement penting agar toggle tidak berkedip 
+                        // atau melawan jari Anda saat Anda sedang menekannya
+                        if (clapToggle && document.activeElement !== clapToggle) {
+                            clapToggle.checked = (pesan.data.clap_sensor === 'on');
+                        }
+                    }
                 }
+                
             }
         };
 
