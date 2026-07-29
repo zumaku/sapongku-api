@@ -1,1 +1,16 @@
-[]
+[
+    {
+        "id": 1785291780812,
+        "ruangan": "meja_kerja",
+        "saklar": "relay1",
+        "status": "on",
+        "waktu": "00:22"
+    },
+    {
+        "id": 1785291827491,
+        "ruangan": "ruang_tamu",
+        "saklar": "saklar3",
+        "status": "on",
+        "waktu": "01:23"
+    }
+]

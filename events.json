@@ -1,0 +1,22 @@
+[
+    {
+        "id": 1785291705794,
+        "trigger_source": "meja_kerja|clap",
+        "operator": "==",
+        "trigger_value": "true",
+        "actions": [
+            {
+                "target": "ruang_tamu|saklar1",
+                "state": "off"
+            },
+            {
+                "target": "meja_kerja|relay1",
+                "state": "on"
+            },
+            {
+                "target": "meja_kerja|relay2",
+                "state": "on"
+            }
+        ]
+    }
+]
