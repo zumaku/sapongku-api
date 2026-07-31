@@ -1,1 +1,23 @@
-[]
+[
+    {
+        "id": 1783236614061,
+        "ruangan": "ruang_tamu",
+        "saklar": "saklar2",
+        "status": "on",
+        "waktu": "17:55"
+    },
+    {
+        "id": 1783236624760,
+        "ruangan": "ruang_tamu",
+        "saklar": "saklar2",
+        "status": "off",
+        "waktu": "05:30"
+    },
+    {
+        "id": 1783267807779,
+        "ruangan": "ruang_tamu",
+        "saklar": "saklar1",
+        "status": "on",
+        "waktu": "04:55"
+    }
+]
