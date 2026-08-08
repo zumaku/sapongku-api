@@ -64,14 +64,19 @@
         .form-group { flex: 1; }
         
         label { display: block; font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.03em; }
-        select, input[type="time"], input[type="text"] { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); color-scheme: dark; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; }
-        select:focus, input[type="time"]:focus, input[type="text"]:focus { border-color: var(--accent); }
+        select, input[type="time"], input[type="text"], input[type="number"] { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); color-scheme: dark; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; }
+        select:focus, input[type="time"]:focus, input[type="text"]:focus, input[type="number"]:focus { border-color: var(--accent); }
 
         .form-actions { display: flex; gap: 10px; margin-top: 4px; }
-        .btn-primary { padding: 12px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; flex: 1; background: var(--text); color: var(--surface); }
+        .btn-primary, .btn-cancel { padding: 12px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; flex: 1; }
+        .btn-primary { background: var(--text); color: var(--surface); }
+        .btn-primary.editing { background: var(--warn); }
+        .btn-cancel { background: var(--danger-soft); color: var(--danger); }
         
         .btn-add-action { background: transparent; border: 1px dashed var(--border); color: var(--text-muted); padding: 10px; border-radius: 8px; cursor: pointer; font-family: 'Inter'; font-size: 13px; width: 100%; margin-bottom: 14px; transition: 0.2s; }
         .btn-add-action:hover { border-color: var(--text-muted); color: var(--text); }
+        
+        .btn-show-form { border-style: solid; background: var(--surface); color: var(--text); margin-bottom: 20px; }
 
         .jadwal-list { margin-top: 26px; }
         .jadwal-empty { text-align: center; color: var(--text-muted); font-size: 13.5px; padding: 20px 0; }
@@ -96,7 +101,7 @@
     <div class="wrap">
         <header>
             <div>
-                <div class="eyebrow">Sapongku · v1.2.0</div>
+                <div class="eyebrow">Sapongku · v1.3.0</div>
                 <h1>Panel Kendali Rumah</h1>
             </div>
             <div class="conn">
@@ -145,6 +150,15 @@
             <div class="room">
                 <div class="room-top">
                     <div class="room-name"><span class="room-icon">🍱</span> Dapur</div>
+                    <div style="display: flex; align-items: start; gap: 10px;">
+                        <span style="font-size: 18px; color: var(--text-muted); font-weight: 500;">🏃</span>
+                        <label class="switch" title="Toggle Sensor Gerak (PIR)">
+                            <input type="checkbox" id="toggle-pir" onchange="togglePir(this)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="room-top" style="margin-top: -8px; margin-bottom: 14px;">
                     <div class="room-sensor offline" id="sensor-dapur">Mencari sensor…</div>
                 </div>
                 <div class="toggle">
@@ -177,15 +191,18 @@
                     <button class="btn-off" onclick="kirim('meja_kerja', 'relay2', 'off', this)">MATI</button>
                 </div>
             </div>
-
         </div>
 
         <!-- TAB JADWAL -->
         <div class="tab-panel" id="tab-jadwal">
             <div class="section-label">Jadwal Harian</div>
 
-            <div class="schedule-form">
-                <h3 class="form-title">Tambah Jadwal Baru</h3>
+            <!-- Tombol Penampil Form -->
+            <button type="button" class="btn-add-action btn-show-form" id="btn-show-jadwal" onclick="bukaFormJadwal()">+ Tambah Jadwal Baru</button>
+
+            <!-- Form disembunyikan secara default -->
+            <div class="schedule-form" id="form-container-jadwal" style="display: none; margin-bottom: 20px;">
+                <h3 class="form-title" id="form-title-jadwal">Tambah Jadwal Baru</h3>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Target Perangkat</label>
@@ -213,26 +230,35 @@
                     </div>
                 </div>
                 <div class="form-actions">
-                    <button class="btn-primary" onclick="submitJadwal()">+ Simpan Jadwal</button>
+                    <button class="btn-primary" id="btn-submit-jadwal" onclick="submitJadwal()">+ Simpan Jadwal</button>
+                    <button class="btn-cancel" onclick="batalEditJadwal()">Batal</button>
                 </div>
+            </div>
 
-                <div class="jadwal-list" id="list-jadwal">
+            <!-- Kontainer Daftar -->
+            <div class="schedule-form" style="padding: 10px 22px;">
+                <div class="jadwal-list" id="list-jadwal" style="margin-top: 0;">
                     <div class="jadwal-empty">Memuat jadwal…</div>
                 </div>
             </div>
         </div>
         
-        <!-- TAB EVENT BERSYARAT MULTI-ACTION -->
+        <!-- TAB EVENT BERSYARAT -->
         <div class="tab-panel" id="tab-event">
             <div class="section-label">Aturan Automasi (If - Then)</div>
 
-            <div class="schedule-form">
-                <h3 class="form-title">Buat Aturan Baru</h3>
+            <!-- Tombol Penampil Form -->
+            <button type="button" class="btn-add-action btn-show-form" id="btn-show-event" onclick="bukaFormEvent()">+ Buat Aturan Baru</button>
+
+            <!-- Form disembunyikan secara default -->
+            <div class="schedule-form" id="form-container-event" style="display: none; margin-bottom: 20px;">
+                <h3 class="form-title" id="form-title-event">Buat Aturan Baru</h3>
                 <div class="form-row">
                     <div class="form-group">
                         <label>JIKA Sensor (Kondisi)</label>
                         <select id="ev-trigger-source" onchange="cekTipeTrigger()">
                             <option value="meja_kerja|clap">👏 Tepuk Tangan Terdeteksi</option>
+                            <option value="dapur|motion_auto">🏃 Gerakan Dapur (Mode Auto)</option>
                             <option value="dapur|temperature">🌡️ Suhu Dapur</option>
                             <option value="dapur|humidity">💧 Kelembaban Dapur</option>
                             <option value="ruang_tamu|temperature">🌡️ Suhu R.Tamu</option>
@@ -255,40 +281,39 @@
                         <input type="text" id="ev-trigger-value" placeholder="Cth: 30">
                     </div>
                 </div>
+
+                <div class="form-row" id="row-time" style="display: none;">
+                    <div class="form-group">
+                        <label>Mulai Jam</label>
+                        <input type="time" id="ev-start-time">
+                    </div>
+                    <div class="form-group">
+                        <label>Sampai Jam</label>
+                        <input type="time" id="ev-end-time">
+                    </div>
+                    <div class="form-group">
+                        <label>Tunda Mati (Detik)</label>
+                        <input type="number" id="ev-duration" min="1" value="10">
+                    </div>
+                </div>
                 
                 <div style="margin: 15px 0; border-top: 1px dashed var(--border);"></div>
                 
                 <div id="actions-container">
-                    <div class="form-row action-row">
-                        <div class="form-group">
-                            <label>MAKA Perangkat</label>
-                            <select class="ev-action-target">
-                                <option value="dapur|saklar1">🍱 Dapur</option>
-                                <option value="ruang_tamu|saklar1">🛋️ Ruang Tamu</option>
-                                <option value="ruang_tamu|saklar2">🪑 Teras</option>
-                                <option value="ruang_tamu|saklar3">🛏️ Kamar</option>
-                                <option value="meja_kerja|relay1">💻 Meja Kerja (Utama)</option>
-                                <option value="meja_kerja|relay2">🔌 Meja Kerja (Samping)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Aksi</label>
-                            <select class="ev-action-state">
-                                <option value="on">Nyalakan</option>
-                                <option value="off">Matikan</option>
-                            </select>
-                        </div>
-                        <button type="button" class="icon-btn del btn-remove-action" onclick="this.parentElement.remove()" style="margin-top: 24px; display: none;">✖</button>
-                    </div>
+                    <!-- Area Baris Aksi -->
                 </div>
 
-                <button type="button" class="btn-add-action" onclick="tambahAksiRow()">+ Tambah Aksi Lain (Berurutan)</button>
+                <button type="button" class="btn-add-action" onclick="tambahAksiRow()">+ Tambah Target Lain (Berurutan)</button>
                 
                 <div class="form-actions">
-                    <button class="btn-primary" onclick="submitEvent()">+ Simpan Automasi</button>
+                    <button class="btn-primary" id="btn-submit-event" onclick="submitEvent()">+ Simpan Automasi</button>
+                    <button class="btn-cancel" onclick="batalEditEvent()">Batal</button>
                 </div>
+            </div>
 
-                <div class="jadwal-list" id="list-event">
+            <!-- Kontainer Daftar -->
+            <div class="schedule-form" style="padding: 10px 22px;">
+                <div class="jadwal-list" id="list-event" style="margin-top: 0;">
                     <div class="jadwal-empty">Memuat aturan event…</div>
                 </div>
             </div>
@@ -302,7 +327,11 @@
         const wsUrl = protocol + '//' + window.location.host;
         const ws = new WebSocket(wsUrl);
 
-        // KAMUS PEMETAAN NAMA PERANGKAT (Dengan Emoji)
+        let globalJadwalData = [];
+        let globalEventData = [];
+        let editJadwalId = null;
+        let editEventId = null;
+
         const deviceNames = {
             "ruang_tamu|saklar1": "🛋️ Ruang Tamu",
             "ruang_tamu|saklar2": "🪑 Teras",
@@ -312,25 +341,19 @@
             "meja_kerja|relay2": "🔌 Meja Kerja (Samping)"
         };
 
-        // KAMUS PEMETAAN NAMA SENSOR TRIGGER (Dengan Emoji)
         const triggerNames = {
+            "dapur|motion_auto": "🏃 Gerakan Dapur (Mode Auto)",
             "dapur|temperature": "🌡️ Suhu Dapur",
             "dapur|humidity": "💧 Kelembaban Dapur",
             "ruang_tamu|temperature": "🌡️ Suhu R.Tamu",
             "ruang_tamu|humidity": "💧 Kelembaban R.Tamu"
         };
 
-        function getFriendlyName(key) {
-            return deviceNames[key] || key;
-        }
-
-        function getFriendlyTrigger(key) {
-            return triggerNames[key] || key;
-        }
+        function getFriendlyName(key) { return deviceNames[key] || key; }
+        function getFriendlyTrigger(key) { return triggerNames[key] || key; }
 
         ws.onopen = () => { 
-            setConn(true); 
-            tulisLog("Terhubung ke Kordinasi Pusat", "ok"); 
+            setConn(true); tulisLog("Terhubung ke Kordinasi Pusat", "ok"); 
             setInterval(() => { if (ws.readyState === WebSocket.OPEN) { ws.send(JSON.stringify({ type: 'check_speed', time: Date.now() })); } }, 2000);
         };
         ws.onclose = () => { setConn(false); tulisLog("Koneksi ke Pusat Terputus!", "err"); document.getElementById('network-speed').innerText = 'Ping: - ms'; };
@@ -352,6 +375,9 @@
                     if (pesan.source === 'meja_kerja') {
                         const clapToggle = document.getElementById('toggle-clap');
                         if (clapToggle && document.activeElement !== clapToggle) { clapToggle.checked = (pesan.data.clap_sensor === 'on'); }
+                    } else if (pesan.source === 'dapur') {
+                        const pirToggle = document.getElementById('toggle-pir');
+                        if (pirToggle && document.activeElement !== pirToggle) { pirToggle.checked = (pesan.data.pir_sensor === 'on'); }
                     }
                 }
             }
@@ -380,8 +406,14 @@
         }
 
         function toggleClap(el) { kirim('meja_kerja', 'clap_sensor', el.checked ? 'on' : 'off', null); }
+        function togglePir(el) { kirim('dapur', 'pir_sensor', el.checked ? 'on' : 'off', null); }
 
         // --- MANAJEMEN JADWAL ---
+        function bukaFormJadwal() {
+            document.getElementById('form-container-jadwal').style.display = 'block';
+            document.getElementById('btn-show-jadwal').style.display = 'none';
+        }
+
         function submitJadwal() {
             const target = document.getElementById('input-target').value;
             const status = document.getElementById('input-status').value;
@@ -389,15 +421,62 @@
             if (!waktu) return alert("Pilih jam!");
             
             const [ruangan, saklar] = target.split('|');
-            fetch('/api/jadwal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ruangan, saklar, status, waktu }) })
-            .then(res => res.json()).then(data => { tulisLog(data.message, "ok"); loadJadwal(); document.getElementById('input-waktu').value = ""; });
+            const payload = { ruangan, saklar, status, waktu };
+            
+            const url = editJadwalId ? `/api/jadwal/${editJadwalId}` : '/api/jadwal';
+            const method = editJadwalId ? 'PUT' : 'POST';
+
+            fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(res => res.json()).then(data => { 
+                tulisLog(data.message, "ok"); 
+                batalEditJadwal();
+                loadJadwal(); 
+            });
         }
+        
+        function editJadwal(id) {
+            bukaFormJadwal();
+            const j = globalJadwalData.find(x => x.id === id);
+            if (!j) return;
+            
+            document.getElementById('input-target').value = `${j.ruangan}|${j.saklar}`;
+            document.getElementById('input-status').value = j.status;
+            document.getElementById('input-waktu').value = j.waktu;
+            
+            editJadwalId = id;
+            document.getElementById('form-title-jadwal').innerText = "Edit Jadwal";
+            const btn = document.getElementById('btn-submit-jadwal');
+            btn.innerText = "Simpan Perubahan";
+            btn.classList.add('editing');
+            
+            window.scrollTo({ top: document.querySelector('#form-container-jadwal').offsetTop - 20, behavior: 'smooth' });
+        }
+
+        function batalEditJadwal() {
+            editJadwalId = null;
+            document.getElementById('form-title-jadwal').innerText = "Tambah Jadwal Baru";
+            const btn = document.getElementById('btn-submit-jadwal');
+            btn.innerText = "+ Simpan Jadwal";
+            btn.classList.remove('editing');
+            
+            document.getElementById('input-waktu').value = "";
+            
+            document.getElementById('form-container-jadwal').style.display = 'none';
+            document.getElementById('btn-show-jadwal').style.display = 'block';
+        }
+
         function hapusJadwal(id) {
             if (!confirm("Hapus jadwal ini?")) return;
-            fetch('/api/jadwal/' + id, { method: 'DELETE' }).then(res => res.json()).then(data => { tulisLog(data.message, "err"); loadJadwal(); });
+            fetch('/api/jadwal/' + id, { method: 'DELETE' }).then(res => res.json()).then(data => { 
+                tulisLog(data.message, "err"); 
+                if (editJadwalId === id) batalEditJadwal();
+                loadJadwal(); 
+            });
         }
+        
         function loadJadwal() {
             fetch('/api/jadwal').then(res => res.json()).then(data => {
+                globalJadwalData = data;
                 const listEl = document.getElementById('list-jadwal');
                 if (data.length === 0) return listEl.innerHTML = '<div class="jadwal-empty">Belum ada jadwal aktif.</div>';
                 let html = '';
@@ -411,68 +490,179 @@
                                     <div class="jadwal-room">${namaPerangkat}</div>
                                     <div class="jadwal-status" style="color: ${isON ? 'var(--accent)' : 'var(--danger)'}">${isON ? 'NYALAKAN' : 'MATIKAN'}</div>
                                 </div>
-                                <div class="jadwal-actions"><button class="icon-btn del" onclick="hapusJadwal(${j.id})">Hapus</button></div>
+                                <div class="jadwal-actions">
+                                    <button class="icon-btn" onclick="editJadwal(${j.id})">Edit</button>
+                                    <button class="icon-btn del" onclick="hapusJadwal(${j.id})">Hapus</button>
+                                </div>
                             </div>`;
                 });
                 listEl.innerHTML = html;
             });
         }
 
-        // --- MANAJEMEN EVENT BERSYARAT (MULTI-ACTION) ---
+        // --- MANAJEMEN EVENT ---
+        function bukaFormEvent() {
+            document.getElementById('form-container-event').style.display = 'block';
+            document.getElementById('btn-show-event').style.display = 'none';
+            cekTipeTrigger(); 
+        }
+
         function cekTipeTrigger() {
             const val = document.getElementById('ev-trigger-source').value;
-            const isEventInstan = val.includes('clap');
-            document.getElementById('row-condition').style.display = isEventInstan ? 'none' : 'flex';
+            const isClap = val.includes('clap');
+            const isMotion = val.includes('motion_auto');
+            
+            document.getElementById('row-condition').style.display = (isClap || isMotion) ? 'none' : 'flex';
+            document.getElementById('row-time').style.display = isMotion ? 'flex' : 'none';
+            
+            document.querySelectorAll('.ev-action-state-container').forEach(el => {
+                el.style.display = isMotion ? 'none' : 'block';
+            });
         }
         
-        document.addEventListener("DOMContentLoaded", () => cekTipeTrigger());
+        function buatAksiRow(targetVal = 'dapur|saklar1', stateVal = 'on', isFirst = false) {
+            const container = document.getElementById('actions-container');
+            const row = document.createElement('div');
+            row.className = 'form-row action-row';
+            row.innerHTML = `
+                <div class="form-group">
+                    <label>MAKA Perangkat</label>
+                    <select class="ev-action-target">
+                        <option value="dapur|saklar1">🍱 Dapur</option>
+                        <option value="ruang_tamu|saklar1">🛋️ Ruang Tamu</option>
+                        <option value="ruang_tamu|saklar2">🪑 Teras</option>
+                        <option value="ruang_tamu|saklar3">🛏️ Kamar</option>
+                        <option value="meja_kerja|relay1">💻 Meja Kerja (Utama)</option>
+                        <option value="meja_kerja|relay2">🔌 Meja Kerja (Samping)</option>
+                    </select>
+                </div>
+                <div class="form-group ev-action-state-container">
+                    <label>Aksi</label>
+                    <select class="ev-action-state">
+                        <option value="on">Nyalakan</option>
+                        <option value="off">Matikan</option>
+                    </select>
+                </div>
+                <button type="button" class="icon-btn del btn-remove-action" onclick="this.parentElement.remove()" style="margin-top: 24px; display: ${isFirst ? 'none' : 'block'};">✖</button>
+            `;
+            
+            row.querySelector('.ev-action-target').value = targetVal;
+            if(stateVal !== 'auto') {
+                row.querySelector('.ev-action-state').value = stateVal;
+            }
+            container.appendChild(row);
+            
+            const isMotion = document.getElementById('ev-trigger-source').value.includes('motion_auto');
+            row.querySelector('.ev-action-state-container').style.display = isMotion ? 'none' : 'block';
+        }
 
         function tambahAksiRow() {
-            const container = document.getElementById('actions-container');
-            const rowPertama = container.querySelector('.action-row').cloneNode(true);
-            rowPertama.querySelector('.btn-remove-action').style.display = 'block';
-            container.appendChild(rowPertama);
+            buatAksiRow('dapur|saklar1', 'on', false);
         }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            buatAksiRow('dapur|saklar1', 'on', true); 
+        });
 
         function submitEvent() {
             const triggerSource = document.getElementById('ev-trigger-source').value;
-            const isEventInstan = triggerSource.includes('clap');
+            const isClap = triggerSource.includes('clap');
+            const isMotion = triggerSource.includes('motion_auto');
+            const isInstant = isClap || isMotion;
             
             const payload = {
                 trigger_source: triggerSource,
-                operator: isEventInstan ? '==' : document.getElementById('ev-operator').value,
-                trigger_value: isEventInstan ? 'true' : document.getElementById('ev-trigger-value').value,
+                operator: isInstant ? '==' : document.getElementById('ev-operator').value,
+                trigger_value: isInstant ? 'true' : document.getElementById('ev-trigger-value').value,
+                start_time: isMotion ? document.getElementById('ev-start-time').value : null, 
+                end_time: isMotion ? document.getElementById('ev-end-time').value : null,
+                duration: isMotion ? document.getElementById('ev-duration').value : null, 
                 actions: [] 
             };
             
-            if (!isEventInstan && !payload.trigger_value) return alert("Isi nilai target trigger terlebih dahulu (contoh: 30)");
+            if (!isInstant && !payload.trigger_value) return alert("Isi nilai target trigger terlebih dahulu!");
+            if (isMotion && (!payload.start_time || !payload.end_time)) return alert("Masukkan rentang jam untuk mode Auto (Misal: 22:00 - 05:00)");
             
             document.querySelectorAll('.action-row').forEach(row => {
                 const target = row.querySelector('.ev-action-target').value;
-                const state = row.querySelector('.ev-action-state').value;
+                const state = isMotion ? 'auto' : row.querySelector('.ev-action-state').value;
                 payload.actions.push({ target, state });
             });
             
             if (payload.actions.length === 0) return alert("Tambahkan minimal 1 perangkat target!");
             
-            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            const url = editEventId ? `/api/events/${editEventId}` : '/api/events';
+            const method = editEventId ? 'PUT' : 'POST';
+
+            fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
             .then(res => res.json()).then(data => { 
                 tulisLog(data.message, "ok"); 
+                batalEditEvent();
                 loadEvent(); 
-                document.getElementById('ev-trigger-value').value = "";
-                
-                const container = document.getElementById('actions-container');
-                while (container.children.length > 1) { container.lastChild.remove(); }
             });
         }
         
+        function editEvent(id) {
+            bukaFormEvent();
+            const ev = globalEventData.find(x => x.id === id);
+            if (!ev) return;
+            
+            document.getElementById('ev-trigger-source').value = ev.trigger_source;
+            document.getElementById('ev-operator').value = ev.operator || '>';
+            document.getElementById('ev-trigger-value').value = ev.trigger_value === 'true' ? '' : (ev.trigger_value || '');
+            document.getElementById('ev-start-time').value = ev.start_time || '';
+            document.getElementById('ev-end-time').value = ev.end_time || '';
+            document.getElementById('ev-duration').value = ev.duration || 10;
+            
+            document.getElementById('actions-container').innerHTML = ''; 
+            ev.actions.forEach((act, idx) => {
+                buatAksiRow(act.target, act.state, idx === 0);
+            });
+            
+            cekTipeTrigger();
+            
+            editEventId = id;
+            document.getElementById('form-title-event').innerText = "Edit Aturan Automasi";
+            const btn = document.getElementById('btn-submit-event');
+            btn.innerText = "Simpan Perubahan";
+            btn.classList.add('editing');
+
+            window.scrollTo({ top: document.querySelector('#form-container-event').offsetTop - 20, behavior: 'smooth' });
+        }
+
+        function batalEditEvent() {
+            editEventId = null;
+            document.getElementById('form-title-event').innerText = "Buat Aturan Baru";
+            const btn = document.getElementById('btn-submit-event');
+            btn.innerText = "+ Simpan Automasi";
+            btn.classList.remove('editing');
+            
+            document.getElementById('ev-trigger-source').value = 'meja_kerja|clap';
+            document.getElementById('ev-operator').value = '>';
+            document.getElementById('ev-trigger-value').value = '';
+            document.getElementById('ev-start-time').value = '';
+            document.getElementById('ev-end-time').value = '';
+            document.getElementById('ev-duration').value = '10';
+            
+            document.getElementById('actions-container').innerHTML = '';
+            buatAksiRow('dapur|saklar1', 'on', true);
+            
+            document.getElementById('form-container-event').style.display = 'none';
+            document.getElementById('btn-show-event').style.display = 'block';
+        }
+
         function hapusEvent(id) {
             if (!confirm("Hapus automasi ini?")) return;
-            fetch('/api/events/' + id, { method: 'DELETE' }).then(res => res.json()).then(data => { tulisLog(data.message, "err"); loadEvent(); });
+            fetch('/api/events/' + id, { method: 'DELETE' }).then(res => res.json()).then(data => { 
+                tulisLog(data.message, "err"); 
+                if (editEventId === id) batalEditEvent();
+                loadEvent(); 
+            });
         }
         
         function loadEvent() {
             fetch('/api/events').then(res => res.json()).then(data => {
+                globalEventData = data;
                 const listEl = document.getElementById('list-event');
                 if (data.length === 0) return listEl.innerHTML = '<div class="jadwal-empty">Belum ada aturan event.</div>';
                 
@@ -481,26 +671,37 @@
                     let textKondisi = "";
                     if(e.trigger_source.includes('clap')) {
                         textKondisi = `JIKA 👏 Tepuk Tangan Terdeteksi`;
+                    } else if(e.trigger_source.includes('motion_auto')) {
+                        textKondisi = `JIKA 🏃 Gerakan Dapur (Mode Auto)`;
                     } else {
-                        // Menggunakan Dictionary untuk Sensor Suhu/Kelembaban
                         textKondisi = `JIKA ${getFriendlyTrigger(e.trigger_source)} ${e.operator} ${e.trigger_value}`;
                     }
 
-                    // Menggunakan Dictionary untuk Daftar MAKA (Aksi)
+                    if (e.start_time && e.end_time) {
+                        textKondisi += ` <br><span style="color:var(--warn); font-size:11px; font-weight: 500;">Berlaku: ${e.start_time} - ${e.end_time} | Tunda Mati: ${e.duration || 10}s</span>`;
+                    }
+
                     let textAksiList = e.actions.map(act => {
                         const namaPerangkat = getFriendlyName(act.target);
-                        return `- ${namaPerangkat} : <span style="color: ${act.state === 'on' ? 'var(--accent)' : 'var(--danger)'}">${act.state === 'on' ? 'NYALAKAN' : 'MATIKAN'}</span>`;
+                        if (act.state === 'auto') {
+                            return `- ${namaPerangkat} : <span style="color: var(--accent)">ON (Gerak)</span> / <span style="color: var(--danger)">OFF (Diam)</span>`;
+                        } else {
+                            return `- ${namaPerangkat} : <span style="color: ${act.state === 'on' ? 'var(--accent)' : 'var(--danger)'}">${act.state === 'on' ? 'NYALAKAN' : 'MATIKAN'}</span>`;
+                        }
                     }).join('<br>');
 
                     html += `<div class="jadwal-item">
                         <div class="jadwal-mid" style="margin-left: 0;">
-                            <div class="jadwal-room" style="font-weight: 700;">${textKondisi}</div>
+                            <div class="jadwal-room" style="font-weight: 700; line-height: 1.4;">${textKondisi}</div>
                             <div class="jadwal-status" style="color: var(--text-muted); font-size: 13px; margin-top: 8px;">
                                 MAKA (Berurutan):<br>
                                 <span style="font-weight: 500; line-height: 1.8;">${textAksiList}</span>
                             </div>
                         </div>
-                        <div class="jadwal-actions"><button class="icon-btn del" onclick="hapusEvent(${e.id})">Hapus</button></div>
+                        <div class="jadwal-actions">
+                            <button class="icon-btn" onclick="editEvent(${e.id})">Edit</button>
+                            <button class="icon-btn del" onclick="hapusEvent(${e.id})">Hapus</button>
+                        </div>
                     </div>`;
                 });
                 listEl.innerHTML = html;

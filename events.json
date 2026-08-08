@@ -18,5 +18,20 @@
                 "state": "on"
             }
         ]
+    },
+    {
+        "id": 1786199390262,
+        "trigger_source": "dapur|motion_auto",
+        "operator": "==",
+        "trigger_value": "true",
+        "actions": [
+            {
+                "target": "dapur|saklar1",
+                "state": "auto"
+            }
+        ],
+        "start_time": "22:29",
+        "end_time": "22:35",
+        "duration": "10"
     }
 ]
